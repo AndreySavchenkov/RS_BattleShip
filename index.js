@@ -14,21 +14,25 @@ const InMemoryDB = new DB();
 
 // Обработчик события при подключении клиента к серверу
 wss.on("connection", (ws) => {
-  console.log("WebSocket client connected");
+  
+  const connectionId = Math.random().toString(36).substr(2, 9);
+  console.log(`WebSocket client connected with ${connectionId} connection id`);
+  
 
   // Обработчик сообщений от клиента
   ws.on("message", (message) => {
     const parseMessage = JSON.parse(message);
     const { type } = parseMessage;
-    const { name, password } = JSON.parse(parseMessage.data);
 
     console.log(`Received message from client: ${parseMessage}`);
 
     if (type === "reg") {
-      InMemoryDB.addPlayer(name, password);
+      const { name, password } = JSON.parse(parseMessage.data);
+      InMemoryDB.addPlayer(name, password, connectionId);
+
       console.log(`Player ${name} added successful!`);
 
-      const {index} = InMemoryDB.getPlayer(name);
+      const { index } = InMemoryDB.getPlayer(name);
 
       ws.send(
         JSON.stringify({
@@ -46,17 +50,44 @@ wss.on("connection", (ws) => {
       ws.send(
         JSON.stringify({
           type: "update_winners",
-          data: JSON.stringify({
-            name: name,
-            wins: 1,
-          }),
+          data: [],
+          id: 0,
+        })
+      );
+
+      ws.send(
+        JSON.stringify({
+          type: "update_room",
+          data: [],
+          id: 0,
+        })
+      );
+    }
+
+    if (type === "create_room") {
+      const user = InMemoryDB.getAllPlayers()?.find((item) => item.connectionId === connectionId);
+      const { name, index } = user;
+
+      ws.send(
+        JSON.stringify({
+          type: "update_room",
+          data: JSON.stringify([
+            {
+              roomId: 0,
+              roomUsers: [
+                {
+                  name: name,
+                  index: index,
+                },
+              ],
+            },
+          ]),
           id: 0,
         })
       );
     }
 
     console.dir(InMemoryDB.getAllPlayers());
-    // ws.send(`You said: ${message}`);
   });
 
   // Обработчик закрытия соединения

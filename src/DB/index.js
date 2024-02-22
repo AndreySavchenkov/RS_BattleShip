@@ -3,11 +3,12 @@ export class DB {
     this.players = [];
   }
 
-  addPlayer(username, password) {
+  addPlayer(username, password, connectionId) {
     this.players.push({
       name: username,
       password,
       index: this.players.length + 1,
+      connectionId,
     });
   }
 
