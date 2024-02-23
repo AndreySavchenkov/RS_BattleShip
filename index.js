@@ -12,85 +12,62 @@ const wss = new WebSocketServer({ port: WS_PORT });
 
 const InMemoryDB = new DB();
 
-// Обработчик события при подключении клиента к серверу
+const formatResponse = (type, data, id = 0) => {
+  return JSON.stringify({
+    type,
+    data: JSON.stringify(data),
+    id,
+  });
+};
+
 wss.on("connection", (ws) => {
-  
   const connectionId = Math.random().toString(36).substr(2, 9);
   console.log(`WebSocket client connected with ${connectionId} connection id`);
-  
 
-  // Обработчик сообщений от клиента
   ws.on("message", (message) => {
-    const parseMessage = JSON.parse(message);
-    const { type } = parseMessage;
+    const parsedMessage = JSON.parse(message);
+    const payload =
+      parsedMessage.data === "" ? "" : JSON.parse(parsedMessage.data);
+    const type = parsedMessage.type;
 
-    console.log(`Received message from client: ${parseMessage}`);
+    console.log(`Received message from client: ${parsedMessage}`);
 
+    //REGISTRATION
     if (type === "reg") {
-      const { name, password } = JSON.parse(parseMessage.data);
-      InMemoryDB.addPlayer(name, password, connectionId);
+      if (InMemoryDB.isPlayerExist(payload.name)) {
+        if (InMemoryDB.checkPlayer(payload.name, payload.password)) {
+          const { index, name } = InMemoryDB.getPlayer(payload.name);
 
-      console.log(`Player ${name} added successful!`);
-
-      const { index } = InMemoryDB.getPlayer(name);
-
-      ws.send(
-        JSON.stringify({
-          type: "reg",
-          data: JSON.stringify({
-            name: name,
-            index: index,
-            error: false,
-            errorText: "",
-          }),
-          id: 0,
-        })
-      );
-
-      ws.send(
-        JSON.stringify({
-          type: "update_winners",
-          data: [],
-          id: 0,
-        })
-      );
-
-      ws.send(
-        JSON.stringify({
-          type: "update_room",
-          data: [],
-          id: 0,
-        })
-      );
+          const response = { name, index, error: false };
+          ws.send(formatResponse("reg", response));
+          ws.send(formatResponse("update_room", {}));
+          ws.send(formatResponse("update_winners", {}));
+        } else {
+          const response = {
+            name: payload.name,
+            error: true,
+            errorText: "Wrong password :(",
+          };
+          ws.send(formatResponse("reg", response));
+        }
+      } else {
+        InMemoryDB.addPlayer(payload.name, payload.password, connectionId);
+        const { name, index } = InMemoryDB.getPlayer(payload.name);
+        
+        const response = { name, index, error: false };
+        ws.send(formatResponse("reg", response));
+        ws.send(formatResponse("update_room", {}));
+        ws.send(formatResponse("update_winners", {}));
+      }
     }
 
-    if (type === "create_room") {
-      const user = InMemoryDB.getAllPlayers()?.find((item) => item.connectionId === connectionId);
-      const { name, index } = user;
-
-      ws.send(
-        JSON.stringify({
-          type: "update_room",
-          data: JSON.stringify([
-            {
-              roomId: 0,
-              roomUsers: [
-                {
-                  name: name,
-                  index: index,
-                },
-              ],
-            },
-          ]),
-          id: 0,
-        })
-      );
+    //CREATE ROOM
+    else if (type === "create_room") {
     }
 
     console.dir(InMemoryDB.getAllPlayers());
   });
 
-  // Обработчик закрытия соединения
   ws.on("close", () => {
     console.log("WebSocket connection closed");
   });

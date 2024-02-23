@@ -3,6 +3,14 @@ export class DB {
     this.players = [];
   }
 
+  isPlayerExist = (name) => {
+    return this.players.some((player) => player.name === name);
+  }
+
+  checkPlayer = (name, password) => {
+    return this.players.some((player) => player.name === name && player.password === password);
+  }
+
   addPlayer(username, password, connectionId) {
     this.players.push({
       name: username,
