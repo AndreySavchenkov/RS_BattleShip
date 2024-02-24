@@ -5,18 +5,20 @@ export class PlayersDB {
 
   isPlayerExist = (name) => {
     return this.players.some((player) => player.name === name);
-  }
+  };
 
   checkPlayer = (name, password) => {
-    return this.players.some((player) => player.name === name && player.password === password);
-  }
+    return this.players.some(
+      (player) => player.name === name && player.password === password
+    );
+  };
 
-  addPlayer(username, password, connectionId) {
+  addPlayer(username, password) {
     this.players.push({
+      index: users.length + 1,
+      wins: 0,
       name: username,
       password,
-      index: this.players.length + 1,
-      connectionId,
     });
   }
 
@@ -27,4 +29,22 @@ export class PlayersDB {
   getAllPlayers() {
     return this.players;
   }
+
+  playerWin(name) {
+    const user = this.users.find((user) => user.name === name);
+    user.wins++;
+  }
+
+  getWinners = () => {
+    return this.users
+      .filter((user) => user.wins > 0)
+      .sort((a, b) => b.wins - a.wins)
+      .slice(0, 10)
+      .map((user) => {
+        return {
+          name: user.name,
+          wins: user.wins,
+        };
+      });
+  };
 }
