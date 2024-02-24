@@ -1,4 +1,5 @@
-import { DB } from "./src/DB/index.js";
+import { PlayersDB } from "./src/DB/players.js";
+import { RoomsDB } from "./src/DB/rooms.js";
 import { httpServer } from "./src/http_server/index.js";
 import { WebSocketServer } from "ws";
 
@@ -10,7 +11,8 @@ httpServer.listen(HTTP_PORT);
 
 const wss = new WebSocketServer({ port: WS_PORT });
 
-const InMemoryDB = new DB();
+const players = new PlayersDB();
+const rooms = new RoomsDB();
 
 const formatResponse = (type, data, id = 0) => {
   return JSON.stringify({
@@ -34,9 +36,9 @@ wss.on("connection", (ws) => {
 
     //REGISTRATION
     if (type === "reg") {
-      if (InMemoryDB.isPlayerExist(payload.name)) {
-        if (InMemoryDB.checkPlayer(payload.name, payload.password)) {
-          const { index, name } = InMemoryDB.getPlayer(payload.name);
+      if (players.isPlayerExist(payload.name)) {
+        if (players.checkPlayer(payload.name, payload.password)) {
+          const { index, name } = players.getPlayer(payload.name);
 
           const response = { name, index, error: false };
           ws.send(formatResponse("reg", response));
@@ -51,9 +53,9 @@ wss.on("connection", (ws) => {
           ws.send(formatResponse("reg", response));
         }
       } else {
-        InMemoryDB.addPlayer(payload.name, payload.password, connectionId);
-        const { name, index } = InMemoryDB.getPlayer(payload.name);
-        
+        players.addPlayer(payload.name, payload.password, connectionId);
+        const { name, index } = players.getPlayer(payload.name);
+
         const response = { name, index, error: false };
         ws.send(formatResponse("reg", response));
         ws.send(formatResponse("update_room", {}));
@@ -65,7 +67,7 @@ wss.on("connection", (ws) => {
     else if (type === "create_room") {
     }
 
-    console.dir(InMemoryDB.getAllPlayers());
+    console.dir(players.getAllPlayers());
   });
 
   ws.on("close", () => {

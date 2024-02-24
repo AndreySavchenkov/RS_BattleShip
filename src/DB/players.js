@@ -1,4 +1,4 @@
-export class DB {
+export class PlayersDB {
   constructor() {
     this.players = [];
   }
