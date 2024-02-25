@@ -15,7 +15,7 @@ export class PlayersDB {
 
   addPlayer(username, password) {
     this.players.push({
-      index: users.length + 1,
+      index: this.players.length + 1,
       wins: 0,
       name: username,
       password,
@@ -36,7 +36,7 @@ export class PlayersDB {
   }
 
   getWinners = () => {
-    return this.users
+    return this.players
       .filter((user) => user.wins > 0)
       .sort((a, b) => b.wins - a.wins)
       .slice(0, 10)
